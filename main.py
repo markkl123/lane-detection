@@ -150,7 +150,7 @@ def save_frames_to_video(frames, fps):
 
 if __name__ == '__main__':
 
-    input_video_path = r'videos\input\video1.mp4'    
+    input_video_path = r'video1.mp4'
     raw_frames, fps = read_frames_from_video(input_video_path)
-
+    print_img(raw_frames[0],"a")
     save_frames_to_video(final_frames, fps)
