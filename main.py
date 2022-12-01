@@ -11,7 +11,7 @@ def print_img(image,name="image"):
     plt.imshow(image)
     plt.title(name)
     plt.show()
-def load_video_frame(filename):
+def load_photo(filename):
     im = cv2.imread(filename)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
@@ -107,10 +107,6 @@ def detect_lane(raw_frames,cropped_im,origin_im):
         # Lanes change will happen naturally when transition is complete
     return res_frames
 
-
-def save_frames_to_video(frames):
-    pass
-
 def find_lane(frame):
     preprocessed_frame, cropped_image = preprocess_frame(frame)
 
@@ -119,8 +115,6 @@ def find_lane(frame):
 if __name__ == '__main__':
     video_filename = "Test_Photo4.png" #"video.mp3"
 
-    res_frames = load_video_frame(video_filename)
+    res_frames = load_photo(video_filename)
 
     final_frames = find_lane(res_frames)
-
-    save_frames_to_video(final_frames)
