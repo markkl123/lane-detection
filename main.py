@@ -11,12 +11,6 @@ def print_img(image,name="image"):
     plt.imshow(image)
     plt.title(name)
     plt.show()
-def load_photo(filename):
-    im = cv2.imread(filename)
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-
-    print_img(im,"original image")
-    return im
 
 
 def preprocess_frame(raw_frames):
@@ -109,12 +103,6 @@ def detect_lane(raw_frames,cropped_im,origin_im):
 
 def find_lane(frame):
     preprocessed_frame, cropped_image = preprocess_frame(frame)
-
     return detect_lane(preprocessed_frame, cropped_image, frame)
 
 if __name__ == '__main__':
-    video_filename = "Test_Photo4.png" #"video.mp3"
-
-    res_frames = load_photo(video_filename)
-
-    final_frames = find_lane(res_frames)
