@@ -6,6 +6,7 @@ figsize = (10, 10)
 
 Slice_width = 0,100
 Slice_high = 62
+
 def print_img(image,name="image"):
     plt.figure(figsize=figsize)
     plt.imshow(image)
@@ -104,5 +105,3 @@ def detect_lane(raw_frames,cropped_im,origin_im):
 def find_lane(frame):
     preprocessed_frame, cropped_image = preprocess_frame(frame)
     return detect_lane(preprocessed_frame, cropped_image, frame)
-
-if __name__ == '__main__':
