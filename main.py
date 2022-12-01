@@ -25,37 +25,6 @@ def read_frames_from_video(video_path, num_seconds=30):
     print(f"Successfully read {len(frames)} frames from {video_path}")
 
     return frames, fps
-        
-
-
-def preprocess_frames(raw_frames):
-    res_frames = raw_frames
-    # Ideas:
-        # Crop image
-        # Filter only certain color pixels
-        # Dilate over lanes to connect broken lines into one lane (- - - -) -> (-------)
-        # How to deal with shades (going under bridge)?
-            # Normalize colors? 
-            # Intensify dark color?
-            # Contrast?
-
-    return res_frames
-
-
-def detect_lanes(preprocessed_frames):
-    res_frames = preprocessed_frames
-    # How to find best lines?
-        # Canny
-        # Hough Parabula ?? self implement (Omri) or use HoughLines (Mark)
-    # How to detect lane transition?
-        # transform lines from (x,y) to (rho, theta) and detect changes in rho (distance to origin)
-            # Distance is decreasing -> LEFT
-            # Distance is increasing -> RIGHT 
-            # Use threshold to deal with noise
-    # How to follow correct lanes during transition?
-        # Compare to last frame
-        # Lanes change will happen naturally when transition is complete
-    return res_frames
 
 
 def save_frames_to_video(frames, fps):
@@ -77,8 +46,5 @@ if __name__ == '__main__':
 
     input_video_path = r'videos\input\video1.mp4'    
     raw_frames, fps = read_frames_from_video(input_video_path)
-
-    preprocessed_frames = preprocess_frames(raw_frames)
-    final_frames = detect_lanes(preprocessed_frames)
 
     save_frames_to_video(final_frames, fps)
