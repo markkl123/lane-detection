@@ -3,12 +3,15 @@ import cv2
 import numpy as np
 
 figsize = (10, 10)
+
+Slice_width = 0,100
+Slice_high = 62
 def print_img(image,name="image"):
     plt.figure(figsize=figsize)
     plt.imshow(image)
     plt.title(name)
     plt.show()
-def load_video_frames(filename):
+def load_video_frame(filename):
     im = cv2.imread(filename)
     im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
@@ -16,9 +19,9 @@ def load_video_frames(filename):
     return im
 
 
-def preprocess_frames(raw_frames):
+def preprocess_frame(raw_frames):
     im_size = raw_frames.shape[:2]
-    cropped_image = raw_frames[(62 * im_size[0]) // 100:, (0*im_size[1] // 100): (100*im_size[1] //100), :]
+    cropped_image = raw_frames[(Slice_high * im_size[0]) // 100:, (Slice_width[0]*im_size[1] // 100): (Slice_width[1]*im_size[1] //100), :]
     print_img(cropped_image, "cropped_image")
     filtered_image = cv2.inRange(cropped_image, np.array([200,200,200]),np.array([255,255,255]))
     print_img(filtered_image, "filtered_image")
@@ -66,7 +69,7 @@ def Draw_area(img,lines):
     cv2.fillPoly(drawn_image, [points], color=[255, 0, 255])
     print_img(drawn_image,"drawn_image")
     return drawn_image
-def detect_lanes(raw_frames,cropped_im,origin_im):
+def detect_lane(raw_frames,cropped_im,origin_im):
     r_step, t_step, TH = 1, np.pi/180, 40
     lines = cv2.HoughLines(raw_frames, r_step, t_step, TH)
     lines = line_filter(lines)
@@ -89,7 +92,7 @@ def detect_lanes(raw_frames,cropped_im,origin_im):
     print_img(res, "res")
     drawn_image = Draw_area(cropped_im,lines)
     im_size = origin_im.shape[:2]
-    origin_im[(62 * im_size[0]) // 100:, (0 * im_size[1] // 100): (100 * im_size[1] // 100), :] = drawn_image
+    origin_im[(Slice_high * im_size[0]) // 100:, (Slice_width[0] * im_size[1] // 100): (Slice_width[1] * im_size[1] // 100), :] = drawn_image
     print_img(origin_im, "final result")
     res_frames = list()
     # How to find best lines?
@@ -108,14 +111,16 @@ def detect_lanes(raw_frames,cropped_im,origin_im):
 def save_frames_to_video(frames):
     pass
 
+def find_lane(frame):
+    preprocessed_frame, cropped_image = preprocess_frame(frame)
+
+    return detect_lane(preprocessed_frame, cropped_image, frame)
 
 if __name__ == '__main__':
     video_filename = "Test_Photo4.png" #"video.mp3"
 
-    res_frames = load_video_frames(video_filename)
+    res_frames = load_video_frame(video_filename)
 
-    preprocessed_frames, cropped_image = preprocess_frames(res_frames)
-
-    final_frames = detect_lanes(preprocessed_frames, cropped_image,res_frames)
+    final_frames = find_lane(res_frames)
 
     save_frames_to_video(final_frames)
