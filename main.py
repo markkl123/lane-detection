@@ -9,19 +9,20 @@ Slice_width = 0,100
 Slice_high = 62
 
 def print_img(image,name="image"):
-    plt.figure(figsize=figsize)
-    plt.imshow(image)
-    plt.title(name)
-    plt.show()
+    pass
+    # plt.figure(figsize=figsize)
+    # plt.imshow(image)
+    # plt.title(name)
+    # plt.show()
 
 
 def preprocess_frame(raw_frames):
     im_size = raw_frames.shape[:2]
     cropped_image = raw_frames[(Slice_high * im_size[0]) // 100:, (Slice_width[0]*im_size[1] // 100): (Slice_width[1]*im_size[1] //100), :]
     print_img(cropped_image, "cropped_image")
-    filtered_image = cv2.inRange(cropped_image, np.array([200,200,200]),np.array([255,255,255]))
+    filtered_image = cv2.inRange(cropped_image, np.array([180,180,180]),np.array([255,255,255]))
     print_img(filtered_image, "filtered_image")
-    kernel = np.ones((5,1))
+    kernel = np.ones((4,4))
     eroded_im = cv2.dilate(filtered_image,kernel)
     print_img(eroded_im, "eroded_im")
     res_frames = filtered_image
@@ -40,9 +41,9 @@ def line_filter(lines):
     res = []
     for line in lines[:, 0, :]:
 
-        if (0.85<line[1]<1.08 or 2.05<line[1]<2.25) and \
+        if (0.95<line[1]<0.965 or 2.1<line[1]<2.15) and \
                 (len(res) == 0 or
-                np.all(np.abs(line[0] - np.array(res)[:, 0])> 250)):
+                np.all(np.abs(line[0] - np.array(res)[:, 0])> 150)):
             res.append(line)
     return np.array(res[:2])
 
@@ -62,35 +63,38 @@ def Draw_area(img,lines):
     points = np.concatenate((points1, points2))
 
     drawn_image = img.copy()
-    cv2.fillPoly(drawn_image, [points], color=[255, 0, 255])
+    cv2.fillPoly(drawn_image, [points], color=[180, 180, 180])
     print_img(drawn_image,"drawn_image")
     return drawn_image
 def detect_lane(raw_frames,cropped_im,origin_im):
-    r_step, t_step, TH = 1, np.pi/180, 40
+    r_step, t_step, TH = 1, np.pi/180, 8
     lines = cv2.HoughLines(raw_frames, r_step, t_step, TH)
-    lines = line_filter(lines)
-    # lines = lines[:, 0, :]
-    print(lines)
-    for r_t in lines:
-        rho = r_t[0]
-        theta = r_t[1]
+    if lines is not None:
+        lines = line_filter(lines)
+    if lines is not None and lines.size > 2:
 
-        a = np.cos(theta)
-        b = np.sin(theta)
-        x0 = a * rho
-        y0 = b * rho
-        x1 = int(x0 + 2000 * (-b))
-        y1 = int(y0 + 2000 * (a))
-        x2 = int(x0 - 2000 * (-b))
-        y2 = int(y0 - 2000 * (a))
+        # lines = lines[:, 0, :]
+        for r_t in lines:
+            rho = r_t[0]
+            theta = r_t[1]
 
-        res = cv2.line(cropped_im, (x1, y1), (x2, y2), (0, 0, 255), thickness=5)
-    print_img(res, "res")
-    drawn_image = Draw_area(cropped_im,lines)
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            x1 = int(x0 + 2000 * (-b))
+            y1 = int(y0 + 2000 * (a))
+            x2 = int(x0 - 2000 * (-b))
+            y2 = int(y0 - 2000 * (a))
+
+            res = cv2.line(cropped_im, (x1, y1), (x2, y2), (0, 0, 255), thickness=5)
+        # print_img(res, "res")
+        print(lines)
+        cropped_im = Draw_area(cropped_im,lines)
     im_size = origin_im.shape[:2]
-    origin_im[(Slice_high * im_size[0]) // 100:, (Slice_width[0] * im_size[1] // 100): (Slice_width[1] * im_size[1] // 100), :] = drawn_image
+    origin_im[(Slice_high * im_size[0]) // 100:, (Slice_width[0] * im_size[1] // 100): (Slice_width[1] * im_size[1] // 100), :] = cropped_im
     print_img(origin_im, "final result")
-    res_frames = list()
+    res_frames = origin_im
     # How to find best lines?
         # Hough Parabula ?? self implement (Omri) or use HoughLines (Mark)
     # How to detect lane transition?
@@ -134,7 +138,7 @@ def read_frames_from_video(video_path, num_seconds=30):
 
 
 def save_frames_to_video(frames, fps):
-    video_path = fr'videos\output\lanes.mp4'
+    video_path = fr'lanes.mp4'
     codec = cv2.VideoWriter_fourcc(*"mp4v")
     h, w = frames[0].shape[:2]
     color = True
@@ -152,5 +156,5 @@ if __name__ == '__main__':
 
     input_video_path = r'video1.mp4'
     raw_frames, fps = read_frames_from_video(input_video_path)
-    print_img(raw_frames[0],"a")
+    final_frames = [find_lane(frame) for frame in raw_frames]
     save_frames_to_video(final_frames, fps)
