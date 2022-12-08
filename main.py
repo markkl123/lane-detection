@@ -40,7 +40,7 @@ def preprocess_frame(raw_frames):
     blur = cv2.GaussianBlur(cropped_image, (5, 5), 0)
 
     # apply Canny edge detection to the blurred frame
-    canny = cv2.Canny(blur, 50, 250)
+    canny = cv2.Canny(blur, 120, 215)
     print_img(canny, "canny")
     kernel = np.ones((3, 1))
     canny = cv2.dilate(canny,kernel)
@@ -49,7 +49,7 @@ def preprocess_frame(raw_frames):
     mask = np.zeros_like(canny)
     ignore_mask_color = 255
     imshape = canny.shape
-    vertices = np.array([[(0,imshape[0]),(200, 10), (600, 10), (imshape[1],imshape[0])]], dtype=np.int32) #320 , 490
+    vertices = np.array([[(0,imshape[0]),(260, 15), (590, 15), (imshape[1],imshape[0])]], dtype=np.int32) #320 , 490
     cv2.fillPoly(mask, vertices, ignore_mask_color)
     res_frames = cv2.bitwise_and(canny, mask)
     print_img(res_frames, "pre")
@@ -99,7 +99,9 @@ def Draw_area(img,lines):
 
     points = np.concatenate((points1, points2))
     drawn_image = img.copy()
-    #cv2.fillPoly(drawn_image, [points], color=[180, 180, 180])
+    cv2.fillPoly(drawn_image, [points], color=[180, 180, 180])
+    points = np.concatenate((points1, points2[::-1]))
+    cv2.fillPoly(drawn_image, [points], color=[180, 180, 180])
     print_img(drawn_image,"drawn_image")
     return drawn_image
 
@@ -108,7 +110,7 @@ def detect_lane(raw_frames,cropped_im,origin_im):
     global last_lanes_arr
     global left_flag
     global right_flag
-    r_step, t_step, TH = 1, np.pi/180, 15
+    r_step, t_step, TH = 0.6, np.pi/180, 15
     lines = cv2.HoughLines(raw_frames, r_step, t_step, TH)
     prev = np.array(last_lanes).copy()
     if lines is not None:
