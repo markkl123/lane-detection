@@ -10,7 +10,7 @@ Slice_width = 0,100
 Slice_high = 62
 last_lanes = []
 print_flag = False
-count = 0
+counter2 = 0
 last_lanes_arr = []
 left_flag = [False,0]
 right_flag = [False,0]
@@ -40,7 +40,7 @@ def preprocess_frame(raw_frames):
     blur = cv2.GaussianBlur(cropped_image, (5, 5), 0)
 
     # apply Canny edge detection to the blurred frame
-    canny = cv2.Canny(blur, 120, 215)
+    canny = cv2.Canny(blur, 120, 200)
     print_img(canny, "canny")
     kernel = np.ones((3, 1))
     canny = cv2.dilate(canny,kernel)
@@ -49,7 +49,7 @@ def preprocess_frame(raw_frames):
     mask = np.zeros_like(canny)
     ignore_mask_color = 255
     imshape = canny.shape
-    vertices = np.array([[(0,imshape[0]),(260, 15), (590, 15), (imshape[1],imshape[0])]], dtype=np.int32) #320 , 490
+    vertices = np.array([[(0,imshape[0]),(260, 5), (590, 5), (imshape[1],imshape[0])]], dtype=np.int32) #320 , 490
     cv2.fillPoly(mask, vertices, ignore_mask_color)
     res_frames = cv2.bitwise_and(canny, mask)
     print_img(res_frames, "pre")
@@ -66,12 +66,14 @@ def preprocess_frame(raw_frames):
 
 def line_filter(lines_origin):
     global last_lanes
+    global counter2
     res = []
     lines = lines_origin[:, 0, :]
 
     for line in lines:
-
-        if (0<line[1]< 1.15 or 2.05 <line[1]<np.pi) and (np.array(last_lanes).shape[0] < 1 or (np.any(np.abs(last_lanes[:,1]-line[1])<0.003) and np.any(np.abs(last_lanes[:,0]-line[0])<2))) and \
+        if len(res)>1:
+            break
+        if (0<line[1]< 1.15 or 2.05 <line[1]<np.pi) and (np.array(last_lanes).shape[0] < 1 or (np.any(np.abs(last_lanes[:,1]-line[1])<0.01) and np.any(np.abs(last_lanes[:,0]-line[0])<6))) and \
                 (len(res) == 0 or
                 np.all(np.abs(line[0] - np.array(res)[:, 0])> 200) and np.all(np.abs(line[0] - np.array(res)[:, 0])< 650)):
                 res.append(line)
@@ -79,6 +81,9 @@ def line_filter(lines_origin):
         last_lanes = np.array(res[:2])
     else:
         last_lanes = []
+
+        counter2 += 1
+        print("counter2 = " + str(counter2))
         return(line_filter(lines_origin))
 
     return np.array(res[:2])
@@ -106,18 +111,17 @@ def Draw_area(img,lines):
     return drawn_image
 
 def detect_lane(raw_frames,cropped_im,origin_im):
-    global count
     global last_lanes_arr
     global left_flag
     global right_flag
-    r_step, t_step, TH = 0.6, np.pi/180, 15
+    r_step, t_step, TH = 1, np.pi/180, 17
     lines = cv2.HoughLines(raw_frames, r_step, t_step, TH)
     prev = np.array(last_lanes).copy()
-    if lines is not None:
+    if lines is not None and lines.shape[0] > 1:
         lines = line_filter(lines)
         # lines = lines[:, 0, :]
-    if lines is None:
-        lines = prev
+    if lines is None or lines.shape[0] < 2:
+        lines = last_lanes_arr[-1]
     if lines is not None and lines.size > 2:
 
         # lines = lines[:, 0, :]
@@ -143,27 +147,25 @@ def detect_lane(raw_frames,cropped_im,origin_im):
             for i in range(1,12):
                 change.append((np.abs(last_lanes_arr[-i][0][0]) + np.abs(last_lanes_arr[-i][1][0])) - (np.abs(last_lanes_arr[-i-1][0][0]) + np.abs(last_lanes_arr[-i-1][1][0])))
             change = np.array(change)
-            if not right_flag[0] and (left_flag[0] or sum(change > 1.5)>7):
+            if not right_flag[0] and (left_flag[0] or sum(change > 1.7)>9):
                 if not left_flag[0]:
                     left_flag[0] = True
                 else:
                     left_flag[1] += 1
-                    if left_flag[1] > 50:
+                    if left_flag[1] > 100:
                         left_flag = [False,0]
                 cv2.putText(cropped_im, "LEFT LANE CHANGE", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            if not left_flag[0] and (right_flag[0] or sum(change < -1.5)>7):
+            if not left_flag[0] and (right_flag[0] or sum(change < -1.7)>9):
                 if not right_flag[0]:
                     right_flag[0] = True
                 else:
                     right_flag[1] += 1
-                    if right_flag[1] > 50:
+                    if right_flag[1] > 100:
                         right_flag = [False,0]
                 cv2.putText(cropped_im, "RIGHT LANE CHANGE", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        last_lanes_arr.append(lines)
+        if lines is not None and lines.shape[0] > 1:
+            last_lanes_arr.append(lines)
         # print_img(res, "res")
-        print(lines,count)
-        if lines.shape[0] != 0:
-            count+=1
         cropped_im = Draw_area(cropped_im,lines)
 
     im_size = origin_im.shape[:2]
@@ -231,3 +233,5 @@ if __name__ == '__main__':
     raw_frames, fps = read_frames_from_video(input_video_path)
     final_frames = [find_lane(frame) for frame in raw_frames]
     save_frames_to_video(final_frames, fps)
+
+print(counter2)
