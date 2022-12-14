@@ -1,10 +1,6 @@
 import cv2
 import numpy as np
 
-
-# Set the dimensions of the figure
-figsize = (10, 10)
-
 # Set the slice of the frame to use for lane detection
 # (in percentage of the frame width and height)
 Slice_width = 0,100
@@ -41,8 +37,9 @@ def preprocess_frame(frame):
     mask = np.zeros_like(canny)
     ignore_mask_color = 255
     imshape = canny.shape
-    vertices = np.array([[(0,imshape[0]),(260, 5), (590, 5), (imshape[1],imshape[0])]], dtype=np.int32)
+    vertices = np.array([[(0,imshape[0]),(280, 5), (570, 5), (imshape[1],imshape[0])]], dtype=np.int32)
     cv2.fillPoly(mask, vertices, ignore_mask_color)
+
     res_frames = cv2.bitwise_and(canny, mask)
 
     return res_frames,cropped_image
@@ -214,6 +211,7 @@ def detect_lane(frame,cropped_im,origin_im):
     # Overlay the detected lanes onto the original frame
     origin_im[(Slice_high * im_size[0]) // 100:, (Slice_width[0] * im_size[1] // 100): (Slice_width[1] * im_size[1] // 100), :] = cropped_im
     res_frames = origin_im
+
     return res_frames
 
 def find_lane(frame):
